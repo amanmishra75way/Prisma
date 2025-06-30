@@ -19,3 +19,10 @@ model User {
   password String
   role     Role   @default(USER)
 }
+
+model UserSubscription {
+  id        Int     @id @default(autoincrement())
+  isActive  Boolean @default(false)
+  userId    Int     @unique
+  user      User    @relation(fields: [userId], references: [id])
+}

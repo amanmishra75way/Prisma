@@ -13,17 +13,17 @@ enum Role {
 }
 
 model User {
-  id             Int               @id @default(autoincrement())
-  email          String            @unique
-  name           String
-  password       String
-  role           Role              @default(USER)
-  subscription   UserSubscription? @relation("UserToSubscription")
+  id           Int               @id @default(autoincrement())
+  email        String            @unique
+  name         String
+  password     String
+  role         Role              @default(USER)
+  subscription UserSubscription? @relation("UserToSubscription")
 }
 
 model UserSubscription {
-  id        Int     @id @default(autoincrement())
-  isActive  Boolean @default(false)
-  userId    Int     @unique
-  user      User    @relation("UserToSubscription", fields: [userId], references: [id])
+  id       Int     @id @default(autoincrement())
+  isActive Boolean @default(false)
+  userId   Int     @unique
+  user     User    @relation("UserToSubscription", fields: [userId], references: [id])
 }

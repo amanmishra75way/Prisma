@@ -79,5 +79,11 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
+app.delete("/api/clear-all", async (req, res) => {
+  await prisma.userSubscription.deleteMany();
+  await prisma.user.deleteMany();
+  res.send("All data cleared");
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

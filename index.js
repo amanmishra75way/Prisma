@@ -11,34 +11,71 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
-app.get("/", async (req, res) => {
-  res.send("Api is working");
+// 🔹 Welcome
+app.get("/", (req, res) => {
+  res.send("API is running");
 });
 
-// Register
+// 🔹 Register User + Create Subscription (inactive)
 app.post("/api/register", async (req, res) => {
   const { email, name, password, role } = req.body;
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return res.status(400).json({ error: "User already exists" });
 
   const hashed = await bcrypt.hash(password, 10);
+
   const user = await prisma.user.create({
-    data: { email, name, password: hashed, role },
+    data: {
+      email,
+      name,
+      password: hashed,
+      role,
+      subscription: {
+        create: {
+          isActive: false,
+        },
+      },
+    },
+    include: {
+      subscription: true,
+    },
   });
 
-  res.json({ user });
+  res.status(201).json({ user });
 });
 
-// Login
+app.patch("/api/activate-subscription/:userId", async (req, res) => {
+  const userId = parseInt(req.params.userId);
+
+  const updated = await prisma.userSubscription.updateMany({
+    where: { userId },
+    data: { isActive: true },
+  });
+
+  if (updated.count === 0) return res.status(404).json({ error: "User not found" });
+  res.json({ message: "Subscription activated" });
+});
+
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: { subscription: true },
+  });
+
   if (!user) return res.status(400).json({ error: "Invalid credentials" });
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+  if (!user.subscription?.isActive) {
+    return res.status(403).json({ error: "Subscription not active" });
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
+
   res.json({ token });
 });
 
